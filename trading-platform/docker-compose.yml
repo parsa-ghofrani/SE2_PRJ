@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    container_name: trading_db
+    environment:
+      POSTGRES_USER: trading
+      POSTGRES_PASSWORD: trading
+      POSTGRES_DB: trading
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    image: python:3.11-slim
+    container_name: trading_api
+    working_dir: /app
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    command: >
+      bash -lc "pip install -U pip &&
+                pip install -r requirements.txt &&
+                uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+volumes:
+  pgdata:
