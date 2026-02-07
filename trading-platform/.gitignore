@@ -1,0 +1,63 @@
+# ---------- OS / Editor ----------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+coverage*
+htmlcov/
+*.log
+
+# ---------- Virtualenv ----------
+.venv/
+venv/
+env/
+ENV/
+
+# ---------- Environment / secrets ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Jupyter ----------
+.ipynb_checkpoints/
+
+# ---------- Alembic runtime ----------
+alembic/versions/*.pyc
+
+# ---------- Docker ----------
+*.pid
+docker-data/
+data/
+postgres-data/
+pgdata/
+*.tar
+*.tgz
+
+# ---------- Local runtime ----------
+*.sqlite3
+*.db
+
+# ---------- Bash init script (your generator) ----------
+init_project.sh
+*.sh
+
+# If you want to keep scripts/run_dev.sh tracked, remove the line above and use:
+# *.sh
+# !scripts/run_dev.sh
