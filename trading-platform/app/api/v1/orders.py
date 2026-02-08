@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_db
+from app.core.deps import get_db, get_current_user
 from app.models.order import Order
+from app.models.user import User
 from app.schemas.order import OrderCreate, OrderOut, CancelResult
 from app.services.orders import create_order
 from app.services.matching import matching_engine
@@ -10,17 +11,13 @@ from app.services.matching import matching_engine
 router = APIRouter()
 
 
-def dev_user_id(x_user_id: int | None) -> int:
-    return x_user_id or 1
-
-
 @router.post("/orders", response_model=OrderOut)
 def post_order(
     payload: OrderCreate,
     db: Session = Depends(get_db),
-    x_user_id: int | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
 ):
-    user_id = dev_user_id(x_user_id)
+    user_id = current_user.id
     try:
         order = create_order(db, user_id, payload)
         matching_engine.submit_and_match(db, order)
@@ -38,11 +35,11 @@ def post_order(
 @router.get("/orders", response_model=list[OrderOut])
 def get_orders(
     db: Session = Depends(get_db),
-    x_user_id: int | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
     symbol: str | None = None,
     status: str | None = None,
 ):
-    user_id = dev_user_id(x_user_id)
+    user_id = current_user.id
     q = db.query(Order).filter(Order.user_id == user_id)
     if symbol:
         q = q.filter(Order.symbol == symbol.upper())
@@ -55,9 +52,9 @@ def get_orders(
 def cancel_order(
     order_id: int,
     db: Session = Depends(get_db),
-    x_user_id: int | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
 ):
-    user_id = dev_user_id(x_user_id)
+    user_id = current_user.id
 
     order = db.get(Order, order_id)
     if not order or order.user_id != user_id:
