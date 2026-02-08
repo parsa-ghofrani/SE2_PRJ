@@ -1,3 +1,9 @@
+import sys
+import os
+
+sys.path.append(os.getcwd())
+
+
 from datetime import datetime
 
 from sqlalchemy.orm import Session
