@@ -1,19 +1,31 @@
-from pydantic import BaseModel, ConfigDict
+"""
+Stock Schemas for API Request/Response
+"""
 from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, Field, ConfigDict
 
-# Base class with shared fields
+
 class StockBase(BaseModel):
-    symbol: str
-    name: str
-    last_price: float
+    """Base stock schema."""
+    symbol: str = Field(..., min_length=1, max_length=16, description="Stock symbol (e.g., AAPL)")
+    name: str = Field(..., min_length=1, max_length=128, description="Company name")
+    last_price: float = Field(..., gt=0, description="Current stock price")
 
-# Class for creating a stock (if needed later)
+
 class StockCreate(StockBase):
+    """Schema for creating a stock."""
     pass
 
-# Class for reading a stock (includes timestamp)
-class StockResponse(StockBase):
-    updated_at: datetime
 
-    # This allows Pydantic to read data directly from the SQLAlchemy model
+class StockUpdate(BaseModel):
+    """Schema for updating a stock."""
+    name: Optional[str] = Field(None, min_length=1, max_length=128)
+    last_price: Optional[float] = Field(None, gt=0)
+
+
+class StockResponse(StockBase):
+    """Schema for stock response."""
+    updated_at: datetime
+    
     model_config = ConfigDict(from_attributes=True)

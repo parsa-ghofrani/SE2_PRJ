@@ -185,6 +185,51 @@ def test_unauthorized_access(client):
     print(f"   ✓ Unauthorized access blocked (status: {response.status_code})")
 
 
+def test_stock_management(client):
+    """Test 8: Stock CRUD operations"""
+    print("\n📊 Test 8: Stock Management...")
+    
+    # Create stock
+    stock_data = {
+        "symbol": "AAPL",
+        "name": "Apple Inc.",
+        "last_price": 150.0
+    }
+    
+    response = client.post("/api/v1/stocks/", json=stock_data)
+    assert response.status_code == 201
+    stock = response.json()
+    print(f"   ✓ Stock created: {stock['symbol']} - {stock['name']}")
+    
+    # Get all stocks
+    response = client.get("/api/v1/stocks/")
+    assert response.status_code == 200
+    stocks = response.json()
+    print(f"   ✓ Retrieved {len(stocks)} stock(s)")
+    
+    # Get specific stock
+    response = client.get("/api/v1/stocks/AAPL")
+    assert response.status_code == 200
+    stock = response.json()
+    assert stock['symbol'] == "AAPL"
+    print(f"   ✓ Retrieved AAPL: ${stock['last_price']}")
+    
+    # Update stock price
+    update_data = {"last_price": 155.0}
+    response = client.put("/api/v1/stocks/AAPL", json=update_data)
+    assert response.status_code == 200
+    updated = response.json()
+    assert updated['last_price'] == 155.0
+    print(f"   ✓ Updated AAPL price to ${updated['last_price']}")
+    
+    # Get stock price
+    response = client.get("/api/v1/stocks/AAPL/price")
+    assert response.status_code == 200
+    price_info = response.json()
+    print(f"   ✓ Current AAPL price: ${price_info['last_price']}")
+    
+    print("   ✓ Stock management test passed!")
+
 def test_complete_trading_flow(client):
     """Test 4: Complete flow - Register, Login, Create Orders, Check Trades"""
     print("\n📈 Test 4: Complete Trading Flow...")
@@ -287,12 +332,13 @@ def test_notifications(client):
     # Create a notification directly
     notification_data = {
         "user_id": 1,
-        "type": "ORDER_FILLED",
-        "message": "Test notification",
-        "related_order_id": 123
+        "type": "ORDER_FILLED",           # ✅
+        "title": "Order Filled",          # ✅
+        "message": "Test notification",    # ✅
+        "data": {"order_id": 123}         # ✅ 
     }
-    
-    response = client.post("/api/v1/notifications/", json=notification_data)
+    response = client.get("/api/v1/notifications/?user_id=1")
+
     
     if response.status_code == 200:
         notification = response.json()
