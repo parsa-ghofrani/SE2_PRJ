@@ -21,4 +21,3 @@ hiredis==2.3.2
 web3==6.20.2
 eth-account==0.11.2
 py-solc-x==2.0.3
-
