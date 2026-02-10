@@ -19,6 +19,26 @@ services:
     volumes:
       - redisdata:/data
 
+  # ✅ Blockchain (Ethereum dev chain)
+  chain:
+    image: ethereum/client-go:stable
+    container_name: trading_chain
+    command: >
+      --dev
+      --http --http.addr 0.0.0.0 --http.port 8545
+      --http.api eth,net,web3,personal,miner
+      --http.corsdomain "*"
+      --http.vhosts "*"
+      --ws --ws.addr 0.0.0.0 --ws.port 8546
+      --ws.api eth,net,web3
+      --allow-insecure-unlock
+      --verbosity 3
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+    volumes:
+      - chaindata:/root/.ethereum
+
   api:
     image: python:3.11-slim
     container_name: trading_api
@@ -29,9 +49,12 @@ services:
       - .env
     environment:
       - PYTHONPATH=/app
+      # Optional defaults (you can also keep these only in .env)
+      - CHAIN_RPC_URL=http://chain:8545
     depends_on:
       - db
       - redis
+      - chain
     ports:
       - "8000:8000"
     command: >
@@ -42,3 +65,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  chaindata:

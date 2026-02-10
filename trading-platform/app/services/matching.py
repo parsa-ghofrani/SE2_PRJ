@@ -9,9 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.models.order import Order
 from app.models.trade import Trade
+from app.services.blockchain import blockchain_adapter
 
-from sqlalchemy.orm import Session
-from app.models.order import Order
 
 def rebuild_from_db(db: Session) -> None:
     open_orders = (
@@ -57,13 +56,13 @@ class OrderBook:
         if order.price is None:
             raise ValueError("LIMIT order requires price")
 
-        remaining = order.quantity - order.filled_quantity
+        remaining = int(order.quantity - order.filled_quantity)
         if remaining <= 0:
             return
 
         e = BookEntry(
-            order_id=order.id,
-            side=order.side,
+            order_id=int(order.id),
+            side=str(order.side),
             price=float(order.price),
             remaining=remaining,
             seq=self._next_seq(),
@@ -134,29 +133,44 @@ class OrderBook:
                 ask.cancelled = True
                 continue
 
-            # create trade
-            db.add(
-                Trade(
-                    buy_order_id=buy_order.id,
-                    sell_order_id=sell_order.id,
-                    symbol=symbol,
-                    price=trade_price,
-                    quantity=qty,
-                )
+            # 1) Create trade row first (so it gets an ID)
+            trade = Trade(
+                buy_order_id=buy_order.id,
+                sell_order_id=sell_order.id,
+                symbol=symbol,
+                price=trade_price,
+                quantity=qty,
             )
+            db.add(trade)
+            db.flush()  # trade.id becomes available here
 
-            # update orders
+            # 2) Record on blockchain (idempotent-ish: if we somehow re-run, adapter/contract can reject)
+            # Best-effort: do NOT raise; leave blockchain_tx_hash = NULL so you can retry later.
+            try:
+                tx_hash = blockchain_adapter.record_trade(
+                    trade_id=int(trade.id),
+                    symbol=str(trade.symbol),
+                    price=float(trade.price),
+                    quantity=int(trade.quantity),
+                    buy_order_id=int(trade.buy_order_id),
+                    sell_order_id=int(trade.sell_order_id),
+                )
+                trade.blockchain_tx_hash = tx_hash
+                db.flush()
+            except Exception:
+                # keep DB trade, but without tx hash
+                pass
+
+            # 3) Update orders
             buy_order.filled_quantity += qty
             sell_order.filled_quantity += qty
 
             buy_order.status = "FILLED" if buy_order.filled_quantity >= buy_order.quantity else "PARTIAL"
             sell_order.status = "FILLED" if sell_order.filled_quantity >= sell_order.quantity else "PARTIAL"
 
-            # update in-memory remaining
+            # 4) Update in-memory remaining
             bid.remaining -= qty
             ask.remaining -= qty
-
-            db.flush()
 
             if bid.remaining <= 0:
                 heapq.heappop(self.bids)
