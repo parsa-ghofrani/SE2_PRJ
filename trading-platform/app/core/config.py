@@ -15,6 +15,16 @@ class Settings(BaseSettings):
     # Redis (from notification service)
     redis_host: str = "localhost"
     redis_port: int = 6379
+    
+    # ✅ Blockchain (اضافه کنید)
+    chain_rpc_url: str = "http://localhost:8545"
+    chain_sender_private_key: str
+    trade_ledger_address: str
+    
+    # ✅ SIWE (اضافه کنید)
+    app_domain: str = "localhost"
+    app_origin: str = "http://localhost:8000"
+    siwe_nonce_ttl_seconds: int = 300
 
 
 settings = Settings()

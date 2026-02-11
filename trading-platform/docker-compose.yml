@@ -39,17 +39,19 @@ services:
     volumes:
       - chaindata:/root/.ethereum
 
+  # ✅ API service (استفاده از Dockerfile برای جلوگیری از نصب مجدد پکیج‌ها)
   api:
-    image: python:3.11-slim
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: trading-api:latest
     container_name: trading_api
-    working_dir: /app
     volumes:
-      - .:/app
+      - .:/app  # برای hot reload
     env_file:
       - .env
     environment:
       - PYTHONPATH=/app
-      # Optional defaults (you can also keep these only in .env)
       - CHAIN_RPC_URL=http://chain:8545
     depends_on:
       - db
@@ -57,12 +59,8 @@ services:
       - chain
     ports:
       - "8000:8000"
-    command: >
-      bash -c "
-      pip install -U pip &&
-      pip install -r requirements.txt &&
-      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-      "
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
 volumes:
   pgdata:
   redisdata:
